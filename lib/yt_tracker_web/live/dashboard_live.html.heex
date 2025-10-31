@@ -1,0 +1,150 @@
+<div class="min-h-screen bg-gray-100">
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+      <h1 class="text-3xl font-bold text-gray-900">YouTube Tracker Dashboard</h1>
+      <div class="flex items-center space-x-4">
+        <span class="text-sm text-gray-700"><%= @current_user.email %></span>
+        <.link
+          navigate={~p"/settings"}
+          class="text-sm text-gray-700 hover:text-gray-900"
+        >
+          Settings
+        </.link>
+        <.link
+          navigate={~p"/channels/new"}
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+        >
+          Add Channel
+        </.link>
+        <.link
+          href={~p"/logout"}
+          method="delete"
+          class="text-sm text-gray-700 hover:text-gray-900"
+        >
+          Logout
+        </.link>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main>
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <!-- Stats -->
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="px-4 py-5 sm:p-6">
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Channels</dt>
+            <dd class="mt-1 text-3xl font-semibold text-gray-900"><%= @stats.total_channels %></dd>
+          </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="px-4 py-5 sm:p-6">
+            <dt class="text-sm font-medium text-gray-500 truncate">Monitored Channels</dt>
+            <dd class="mt-1 text-3xl font-semibold text-green-600"><%= @stats.monitored_channels %></dd>
+          </div>
+        </div>
+
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+          <div class="px-4 py-5 sm:p-6">
+            <dt class="text-sm font-medium text-gray-500 truncate">Recent Videos</dt>
+            <dd class="mt-1 text-3xl font-semibold text-gray-900"><%= @stats.total_videos %></dd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Channels Section -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+        <div class="px-4 py-5 sm:px-6">
+          <h2 class="text-lg leading-6 font-medium text-gray-900">Tracked Channels</h2>
+        </div>
+        <div class="border-t border-gray-200">
+          <ul role="list" class="divide-y divide-gray-200">
+            <%= for channel <- @channels do %>
+              <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center min-w-0 flex-1">
+                    <%= if channel[:thumbnail_url] do %>
+                      <img class="h-12 w-12 rounded-full" src={channel[:thumbnail_url]} alt="" />
+                    <% end %>
+                    <div class="ml-4 flex-1">
+                      <.link navigate={~p"/channels/#{channel[:youtube_id]}"} class="text-sm font-medium text-indigo-600 hover:text-indigo-900 truncate">
+                        <%= channel[:title] %>
+                      </.link>
+                      <p class="text-sm text-gray-500"><%= channel[:youtube_id] %></p>
+                      <%= if channel[:monitor] do %>
+                        <span class={[
+                          "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+                          if(channel[:monitor].enabled, do: "bg-green-100 text-green-800", else: "bg-gray-100 text-gray-800")
+                        ]}>
+                          <%= if channel[:monitor].enabled, do: "Monitoring Active", else: "Monitoring Paused" %>
+                        </span>
+                      <% end %>
+                    </div>
+                  </div>
+                  <div class="ml-4 flex-shrink-0">
+                    <%= if channel[:monitor] && channel[:monitor].enabled do %>
+                      <button
+                        phx-click="disable_monitoring"
+                        phx-value-channel_id={channel[:id]}
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                      >
+                        Disable
+                      </button>
+                    <% else %>
+                      <button
+                        phx-click="enable_monitoring"
+                        phx-value-channel_id={channel[:id]}
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                      >
+                        Enable
+                      </button>
+                    <% end %>
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Recent Videos Section -->
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h2 class="text-lg leading-6 font-medium text-gray-900">Recent Videos</h2>
+        </div>
+        <div class="border-t border-gray-200">
+          <ul role="list" class="divide-y divide-gray-200">
+            <%= for video <- @recent_videos do %>
+              <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                <div class="flex items-start">
+                  <%= if video.thumbnail_url do %>
+                    <img class="h-20 w-36 object-cover rounded" src={video.thumbnail_url} alt="" />
+                  <% end %>
+                  <div class="ml-4 flex-1">
+                    <p class="text-sm font-medium text-gray-900"><%= video.title %></p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Published: <%= Calendar.strftime(video.published_at, "%Y-%m-%d %H:%M") %>
+                    </p>
+                    <%= if video.view_count do %>
+                      <p class="text-xs text-gray-500">Views: <%= format_number(video.view_count) %></p>
+                    <% end %>
+                  </div>
+                  <a
+                    href={"https://youtube.com/watch?v=#{video.youtube_id}"}
+                    target="_blank"
+                    class="ml-4 inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Watch
+                  </a>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

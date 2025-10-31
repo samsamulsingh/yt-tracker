@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: yt_tracker_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: ecto://postgres:postgres@db/yt_tracker_dev
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      PHX_HOST: localhost
+      PORT: 4000
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:

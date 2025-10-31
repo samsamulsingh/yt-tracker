@@ -36,3 +36,15 @@ yt_tracker-*.tar
 
 # macOS
 .DS_Store
+
+# Node
+/assets/node_modules/
+/node_modules/
+
+# Assets build output
+/assets/_build/
+/priv/static/assets/
+
+# Local build and deps
+/_build/
+/deps/

@@ -1,7 +1,7 @@
 FROM elixir:1.16-alpine AS build
 
-# Install build dependencies
-RUN apk add --no-cache build-base git
+# Install build dependencies (including node for assets)
+RUN apk add --no-cache build-base git nodejs npm
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ WORKDIR /app
 RUN mix local.hex --force && \
     mix local.rebar --force
 
-# Copy dependency files
+# Copy dependency files and fetch Elixir deps
 COPY mix.exs mix.lock ./
 RUN mix deps.get --only prod
 
@@ -17,6 +17,15 @@ RUN mix deps.get --only prod
 COPY config config
 COPY lib lib
 COPY priv priv
+
+# Copy assets and install JS dependencies, then build assets
+# We copy package files first so npm can install cached layers when deps don't change
+COPY assets/package*.json assets/
+COPY assets/ assets/
+RUN cd assets && npm ci --silent
+
+# Build and deploy assets for production (tailwind + esbuild + phx.digest)
+RUN MIX_ENV=prod mix assets.deploy
 
 # Compile and build release
 RUN MIX_ENV=prod mix compile

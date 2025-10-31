@@ -1,0 +1,8 @@
+# Ignore node modules and build artifacts
+node_modules
+assets/node_modules
+_build
+deps
+*.tar
+.DS_Store
+.env

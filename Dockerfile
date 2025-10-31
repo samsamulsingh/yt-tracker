@@ -1,7 +1,7 @@
-FROM elixir:1.16-alpine AS build
+FROM elixir:1.16-alpine
 
-# Install build dependencies (including node for assets)
-RUN apk add --no-cache build-base git nodejs npm
+# Install build and runtime dependencies (node for assets + build tools)
+RUN apk add --no-cache build-base git nodejs npm openssl ncurses-libs libstdc++
 
 WORKDIR /app
 
@@ -19,7 +19,6 @@ COPY lib lib
 COPY priv priv
 
 # Copy assets and install JS dependencies, then build assets
-# We copy package files first so npm can install cached layers when deps don't change
 COPY assets/package*.json assets/
 COPY assets/ assets/
 RUN cd assets && npm ci --silent
@@ -30,17 +29,6 @@ RUN MIX_ENV=prod mix assets.deploy
 # Compile and build release
 RUN MIX_ENV=prod mix compile
 RUN MIX_ENV=prod mix release
-
-# Production stage
-FROM alpine:3.18
-
-# Install runtime dependencies
-RUN apk add --no-cache openssl ncurses-libs libstdc++
-
-WORKDIR /app
-
-# Copy release from build stage
-COPY --from=build /app/_build/prod/rel/yt_tracker ./
 
 # Create non-root user
 RUN addgroup -g 1000 yt_tracker && \
@@ -56,4 +44,4 @@ EXPOSE 4000
 ENV MIX_ENV=prod
 
 # Start the application
-CMD ["bin/yt_tracker", "start"]
+CMD ["_build/prod/rel/yt_tracker/bin/yt_tracker", "start"]

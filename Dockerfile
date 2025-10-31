@@ -43,5 +43,9 @@ EXPOSE 4000
 # Set environment
 ENV MIX_ENV=prod
 
-# Start the application
-CMD ["_build/prod/rel/yt_tracker/bin/yt_tracker", "start"]
+# Copy entrypoint script and make executable (runs migrations then starts release)
+COPY --chown=yt_tracker:yt_tracker rel/entrypoint.sh rel/entrypoint.sh
+RUN chmod +x rel/entrypoint.sh
+
+# Use entrypoint which runs migrations then starts the release
+ENTRYPOINT ["rel/entrypoint.sh"]
